@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Elite - No-Excuses Physique & Lifestyle Coaching</title>
+  <meta name="description" content="Elite online fitness coaching. Stop struggling, destroy body fat, and build your dream physique with expert workouts, custom nutrition, and professional machine guides.">
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Real Stripe.js — loaded from Stripe's CDN for PCI compliance -->
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════ NAVBAR ══ -->
+  <nav class="navbar" id="home">
+    <div class="logo">
+      <i class="fas fa-dumbbell"></i>
+      <span>APEX ELITE</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#home"      class="active">Home</a></li>
+      <li><a href="#workouts"           >Workouts</a></li>
+      <li><a href="#nutrition"          >Nutrition</a></li>
+      <li><a href="#machines"           >Machine Guide</a></li>
+      <li><a href="#pricing"            >Programs</a></li>
+    </ul>
+    <a href="#pricing" class="nav-cta">Get Started</a>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════ HERO ══ -->
+  <header class="hero">
+    <div class="hero-content">
+      <div class="coach-tag">
+        <i class="fas fa-bolt"></i> Results-Only Elite Coaching
+      </div>
+      <h1 class="hero-title">
+        STOP EXCUSES.<br><span>BUILD RESULTS.</span>
+      </h1>
+      <p class="hero-desc">
+        I don't sell comfort. I train hard-working individuals to force their bodies to adapt,
+        shed stubborn fat, and build aesthetic physique symmetry. Start training with professional
+        guidance today.
+      </p>
+      <div class="hero-actions">
+        <a href="#workouts" class="btn-primary">
+          <i class="fas fa-play"></i> Custom Workout Finder
+        </a>
+        <a href="#pricing" class="btn-secondary">
+          <i class="fas fa-tags"></i> View Programs
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="coach-illustration">
+        <div class="illustration-content">
+          <i class="fas fa-fire"></i>
+          <h3>FORGE A<br>NEW LIFE</h3>
+          <p style="font-size:.8rem;opacity:.8;">No-nonsense physique adjustments</p>
+        </div>
+        <div class="stat-badge stat-badge-1">
+          <i class="fas fa-check-double"></i>
+          <div><span class="stat-num">100%</span><span class="stat-lbl">Dedication</span></div>
+        </div>
+        <div class="stat-badge stat-badge-2">
+          <i class="fas fa-dumbbell"></i>
+          <div><span class="stat-num">500+</span><span class="stat-lbl">Transformations</span></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════ WORKOUTS ══ -->
+  <section class="section" id="workouts">
+    <div class="section-hdr">
+      <span class="subtitle">Quick Routine Selector</span>
+      <h2 class="title">Generate Your Custom Workout</h2>
+    </div>
+
+    <div class="generator-container">
+      <!-- Input Panel -->
+      <div class="glass-panel generator-form">
+        <h3 style="color:#fff;font-size:1.3rem;margin-bottom:10px;">Select Preferences</h3>
+
+        <div class="form-group">
+          <label>1. Select Primary Goal</label>
+          <div class="option-cards" data-category="goal">
+            <div class="option-card selected" data-value="gain"><i class="fas fa-dumbbell"></i><span>Build Muscle</span></div>
+            <div class="option-card"          data-value="cut" ><i class="fas fa-fire-flame-curved"></i><span>Lose Fat</span></div>
+            <div class="option-card"          data-value="health"><i class="fas fa-heartbeat"></i><span>Conditioning</span></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>2. Current Training Level</label>
+          <div class="option-cards" data-category="level">
+            <div class="option-card"          data-value="beginner"    ><i class="fas fa-gauge-low"></i><span>Beginner</span></div>
+            <div class="option-card selected" data-value="intermediate"><i class="fas fa-gauge"></i><span>Intermediate</span></div>
+            <div class="option-card"          data-value="advanced"    ><i class="fas fa-gauge-high"></i><span>Advanced</span></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>3. Available Setup</label>
+          <div class="option-cards" data-category="equip">
+            <div class="option-card"          data-value="home"><i class="fas fa-house"></i><span>Home Gym</span></div>
+            <div class="option-card selected" data-value="gym" ><i class="fas fa-building-columns"></i><span>Full Gym</span></div>
+          </div>
+        </div>
+
+        <button id="generate-workout-btn" class="btn-primary" style="margin-top:10px;justify-content:center;">
+          <i class="fas fa-rotate"></i> Update Routine
+        </button>
+      </div>
+
+      <!-- Results Panel -->
+      <div class="glass-panel workout-result-box" id="workout-result-box"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════ NUTRITION ══ -->
+  <section class="section" id="nutrition">
+    <div class="section-hdr">
+      <span class="subtitle">Fuel Your Performance</span>
+      <h2 class="title">Daily Macro & Calorie Calculator</h2>
+    </div>
+
+    <div class="nutrition-container">
+      <form class="glass-panel nutri-input-grid" id="macro-form">
+        <h3 style="color:#fff;font-size:1.3rem;grid-column:span 2;margin-bottom:10px;">Body Metrics</h3>
+
+        <div class="form-group">
+          <label for="weight">Weight (kg)</label>
+          <input type="number" id="weight" class="input-styled" value="80" required min="30" max="300">
+        </div>
+        <div class="form-group">
+          <label for="height">Height (cm)</label>
+          <input type="number" id="height" class="input-styled" value="180" required min="100" max="250">
+        </div>
+        <div class="form-group">
+          <label for="age">Age (years)</label>
+          <input type="number" id="age" class="input-styled" value="28" required min="15" max="90">
+        </div>
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <select id="gender" class="input-styled">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label for="activity">Daily Activity Level</label>
+          <select id="activity" class="input-styled">
+            <option value="1.2">Sedentary (No exercise)</option>
+            <option value="1.375">Lightly Active (1-3 days/week)</option>
+            <option value="1.55" selected>Moderately Active (3-5 days/week)</option>
+            <option value="1.725">Very Active (6-7 days/week)</option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label for="macro-goal">Fitness Target</label>
+          <select id="macro-goal" class="input-styled">
+            <option value="aggressive-cut">Aggressive Fat Loss (Cut)</option>
+            <option value="fat-loss" selected>Sustainable Fat Loss</option>
+            <option value="maintenance">Maintenance (Recomp)</option>
+            <option value="muscle-gain">Lean Muscle Surplus (Bulk)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary" style="grid-column:span 2;justify-content:center;margin-top:10px;">
+          <i class="fas fa-calculator"></i> Calculate Targets
+        </button>
+      </form>
+
+      <div class="glass-panel nutri-results">
+        <div class="nutri-chart-box">
+          <div class="nutri-calories">
+            <span class="cal-num" id="calories-num">2400</span>
+            <span class="cal-lbl">Daily Calories Target</span>
+          </div>
+          <div class="nutri-macros">
+            <div class="macro-bar-group">
+              <div class="macro-label"><span class="name">Protein (Build/Retain)</span><span class="val" id="protein-val">180g (30%)</span></div>
+              <div class="macro-bar-bg"><div id="protein-fill" class="macro-bar-fill protein"></div></div>
+            </div>
+            <div class="macro-bar-group">
+              <div class="macro-label"><span class="name">Carbohydrates (Energy)</span><span class="val" id="carb-val">240g (40%)</span></div>
+              <div class="macro-bar-bg"><div id="carb-fill" class="macro-bar-fill carb"></div></div>
+            </div>
+            <div class="macro-bar-group">
+              <div class="macro-label"><span class="name">Dietary Fats (Hormones)</span><span class="val" id="fat-val">80g (30%)</span></div>
+              <div class="macro-bar-bg"><div id="fat-fill" class="macro-bar-fill fat"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ MACHINE GUIDE ══ -->
+  <section class="section" id="machines">
+    <div class="section-hdr">
+      <span class="subtitle">Proper Execution Matters</span>
+      <h2 class="title">Gym Machine Blueprint</h2>
+    </div>
+
+    <div class="guide-controls">
+      <div class="search-box">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="machine-search" class="input-styled" placeholder="Search exercises or muscle groups...">
+      </div>
+      <div class="filter-tags">
+        <span class="filter-tag active" data-category="all">All</span>
+        <span class="filter-tag" data-category="chest">Chest</span>
+        <span class="filter-tag" data-category="back">Back</span>
+        <span class="filter-tag" data-category="legs">Legs</span>
+      </div>
+    </div>
+
+    <div class="machine-grid" id="machine-grid"></div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════ PRICING ══ -->
+  <section class="section" id="pricing">
+    <div class="section-hdr">
+      <span class="subtitle">Real Stripe Checkout — Secure & Instant</span>
+      <h2 class="title">Choose Your Program</h2>
+      <p style="margin-top:12px;font-size:.95rem;">
+        Click any plan to checkout securely via Stripe. Test card: <code style="background:rgba(255,255,255,.08);padding:2px 8px;border-radius:4px;color:#fff;">4242 4242 4242 4242</code>
+      </p>
+    </div>
+
+    <!-- Plans are injected by app.js after fetching /api/plans -->
+    <div class="pricing-grid" id="pricing-grid">
+      <!-- Loading skeleton -->
+      <div class="pricing-loading">
+        <i class="fas fa-circle-notch fa-spin" style="font-size:2rem;color:var(--accent-orange);"></i>
+        <p style="margin-top:12px;">Loading plans…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════ FOOTER ══ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-logo">
+        <i class="fas fa-dumbbell"></i>
+        <span>APEX ELITE</span>
+      </div>
+      <p>Results-driven physical transformation. Destroy excuses, unlock your genetic potential,
+         and secure a healthier, high-performance future.</p>
+      <div class="footer-socials">
+        <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="social-icon"><i class="fab fa-youtube"></i></a>
+        <a href="#" class="social-icon"><i class="fab fa-x-twitter"></i></a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2026 Apex Elite Coaching. All rights reserved.
+      Payments secured by <strong style="color:#635bff;">Stripe</strong>.
+    </div>
+  </footer>
+
+  <!-- Toast notification (injected by JS) -->
+  <div id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

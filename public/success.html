@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful — Apex Elite Coaching</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; overflow:hidden; }
+
+    .success-wrapper {
+      text-align:center;
+      padding:60px 40px;
+      max-width:560px;
+      width:100%;
+      animation:fadeIn .6s ease-out forwards;
+    }
+
+    .success-icon-ring {
+      width:110px; height:110px; border-radius:50%;
+      background:rgba(16,185,129,.1);
+      border:2px solid var(--accent-green);
+      display:flex; align-items:center; justify-content:center;
+      margin:0 auto 32px;
+      box-shadow:0 0 40px rgba(16,185,129,.3);
+      animation:popIn .5s cubic-bezier(.16,1,.3,1) .3s both;
+    }
+
+    .success-icon-ring i { font-size:3rem; color:var(--accent-green); }
+
+    @keyframes popIn {
+      from { transform:scale(.4); opacity:0; }
+      to   { transform:scale(1);  opacity:1; }
+    }
+
+    .success-wrapper h1 {
+      font-size:2.4rem; color:#fff; margin-bottom:12px;
+    }
+
+    .success-wrapper .plan-name {
+      display:inline-block;
+      background:var(--grad-primary); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800;
+      text-transform:uppercase; margin-bottom:16px;
+    }
+
+    .success-wrapper p {
+      font-size:1rem; color:var(--text-muted); margin-bottom:40px; line-height:1.7;
+    }
+
+    .stripe-receipt {
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border-color);
+      border-radius:var(--radius-md);
+      padding:24px 28px;
+      text-align:left;
+      margin-bottom:36px;
+    }
+
+    .receipt-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 0; border-bottom:1px solid var(--border-color);
+      font-size:.9rem;
+    }
+    .receipt-row:last-child { border-bottom:none; padding-bottom:0; }
+    .receipt-row .label { color:var(--text-muted); }
+    .receipt-row .value { color:#fff; font-weight:600; }
+    .receipt-row .value.green { color:var(--accent-green); }
+
+    .success-actions { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+
+    .confetti-container { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9999; overflow:hidden; }
+    .confetti-particle  { position:absolute; opacity:1; }
+    @keyframes confettiFall {
+      0%   { transform:translateY(-20px) rotate(0deg);   opacity:1; }
+      85%  { opacity:1; }
+      100% { transform:translateY(100vh) rotate(720deg); opacity:0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="success-wrapper">
+    <!-- Icon -->
+    <div class="success-icon-ring">
+      <i class="fas fa-check"></i>
+    </div>
+
+    <!-- Heading -->
+    <h1>Payment Confirmed!</h1>
+    <span class="plan-name" id="plan-display">Your Plan</span>
+    <p>
+      Welcome to Apex Elite. Your program is now active.<br>
+      Check your email for your receipt and onboarding details.
+    </p>
+
+    <!-- Receipt Summary -->
+    <div class="stripe-receipt">
+      <div class="receipt-row">
+        <span class="label"><i class="fab fa-stripe" style="color:#635bff;margin-right:6px;"></i> Payment Method</span>
+        <span class="value">Stripe Secure Checkout</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Status</span>
+        <span class="value green"><i class="fas fa-circle-check"></i> Paid Successfully</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Session ID</span>
+        <span class="value" id="session-display" style="font-size:.78rem;font-family:monospace;">—</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="success-actions">
+      <a href="index.html#workouts" class="btn-primary">
+        <i class="fas fa-dumbbell"></i> Start Training Now
+      </a>
+      <a href="index.html" class="btn-secondary">
+        <i class="fas fa-house"></i> Back to Home
+      </a>
+    </div>
+
+    <p style="margin-top:28px;font-size:.78rem;color:rgba(255,255,255,.2);">
+      <i class="fas fa-lock" style="margin-right:4px;"></i>
+      Secured by Stripe · 256-bit SSL Encryption
+    </p>
+  </div>
+
+  <script>
+    // Read URL params set by Stripe on redirect
+    const params      = new URLSearchParams(window.location.search);
+    const sessionId   = params.get('session_id') || '—';
+    const plan        = params.get('plan')        || 'Your Plan';
+
+    // Save to local storage to unlock on main page
+    if (plan && plan !== 'Your Plan') {
+      const savedSub = localStorage.getItem('no_excuses_premium');
+      let unlockedPlans = [];
+      if (savedSub) {
+        try {
+          const parsed = JSON.parse(savedSub);
+          unlockedPlans = parsed.unlockedPlans || [];
+        } catch(e) {}
+      }
+      if (!unlockedPlans.includes(plan)) {
+        unlockedPlans.push(plan);
+      }
+      localStorage.setItem('no_excuses_premium', JSON.stringify({
+        isPremiumUnlocked: true,
+        unlockedPlans: unlockedPlans
+      }));
+    }
+
+    // Prettify plan name for display
+    const planLabels  = {
+      starter: 'Starter Kickoff',
+      shred:   'Apex Shred Program',
+      elite:   'Elite Monthly Coaching',
+      vip:     'VIP Supreme Transformation',
+    };
+
+    document.getElementById('plan-display').textContent    = planLabels[plan] || plan;
+    document.getElementById('session-display').textContent = sessionId.length > 20
+      ? sessionId.substring(0, 28) + '…'
+      : sessionId;
+
+    // Confetti
+    function triggerConfetti() {
+      const container = document.createElement('div');
+      container.className = 'confetti-container';
+      document.body.appendChild(container);
+      const colors = ['#ff5722','#ff9800','#4caf50','#00bcd4','#9c27b0','#e91e63','#635bff'];
+      for (let i = 0; i < 150; i++) {
+        const p   = document.createElement('div');
+        p.className = 'confetti-particle';
+        p.style.left   = Math.random() * 100 + 'vw';
+        p.style.top    = '-20px';
+        p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        p.style.width  = Math.random() * 10 + 5 + 'px';
+        p.style.height = Math.random() * 12 + 6 + 'px';
+        p.style.transform = `rotate(${Math.random() * 360}deg)`;
+        const dur  = Math.random() * 2.5 + 1.5;
+        const del  = Math.random() * 0.6;
+        p.style.animation = `confettiFall ${dur}s linear ${del}s forwards`;
+        container.appendChild(p);
+      }
+      setTimeout(() => container.remove(), 5000);
+    }
+
+    triggerConfetti();
+  </script>
+</body>
+</html>
