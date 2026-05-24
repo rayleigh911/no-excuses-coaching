@@ -263,6 +263,42 @@
     </div>
   </footer>
 
+  <!-- ═══════════════════════════════════════════════════ CHECKOUT MODAL ══ -->
+  <div id="checkout-modal" class="modal-overlay">
+    <div class="glass-panel modal-content">
+      <button class="modal-close-btn" id="close-modal-btn">&times;</button>
+      
+      <div class="modal-header">
+        <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 5px;">Complete Your Order</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">You are subscribing to <strong id="modal-plan-name" style="color: var(--accent-orange);">Elite Monthly Coaching</strong></p>
+      </div>
+
+      <!-- Email Input for customer creation (required for Stripe Elements) -->
+      <div class="form-group" id="email-group" style="margin-top: 20px;">
+        <label for="checkout-email" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; display: block;">Email Address</label>
+        <input type="email" id="checkout-email" class="input-styled" placeholder="name@email.com" required style="width: 100%; box-sizing: border-box; padding: 12px;">
+      </div>
+
+      <!-- Stripe Payment Element Mount Point -->
+      <div id="payment-element-container" style="margin-top: 20px; display: none;">
+        <div id="payment-element"></div>
+      </div>
+
+      <!-- Error Message -->
+      <div id="payment-error" style="color: var(--accent-orange); font-size: 0.85rem; margin-top: 15px; display: none;"></div>
+
+      <!-- Pay Button -->
+      <button id="pay-btn" class="btn-primary" style="margin-top: 25px; width: 100%; justify-content: center;" disabled>
+        <i class="fas fa-lock"></i> <span id="pay-btn-text">Initialize Payment</span>
+      </button>
+
+      <div class="stripe-secure-note" style="margin-top: 20px; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+        <i class="fab fa-stripe" style="color:#635bff; font-size:1.2rem; vertical-align: middle; margin-right: 5px;"></i>
+        Secure 256-bit SSL encrypted checkout
+      </div>
+    </div>
+  </div>
+
   <!-- Toast notification (injected by JS) -->
   <div id="toast-container"></div>
 

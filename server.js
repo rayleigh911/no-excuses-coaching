@@ -84,6 +84,11 @@ const PLANS = {
   },
 };
 
+// ─── Route: Expose Stripe Config (for publishable key) ────────────────────────
+app.get('/api/config', (req, res) => {
+  res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
+});
+
 // ─── Route: Get All Plans (for the frontend to render dynamically) ────────────
 app.get('/api/plans', (req, res) => {
   const plansForClient = Object.entries(PLANS).map(([id, plan]) => ({
@@ -98,9 +103,9 @@ app.get('/api/plans', (req, res) => {
   res.json(plansForClient);
 });
 
-// ─── Route: Create Stripe Checkout Session ────────────────────────────────────
-app.post('/api/create-checkout-session', async (req, res) => {
-  const { planId } = req.body;
+// ─── Route: Create Stripe Payment Intent or Subscription ──────────────────────
+app.post('/api/create-payment-intent', async (req, res) => {
+  const { planId, email } = req.body;
   const plan = PLANS[planId];
 
   // Safety check: ensure keys are configured
@@ -114,48 +119,77 @@ app.post('/api/create-checkout-session', async (req, res) => {
     return res.status(400).json({ error: `Unknown plan: ${planId}` });
   }
 
-  // Build the line item for this session
-  const lineItem = {
-    price_data: {
-      currency:     plan.currency,
-      product_data: {
-        name:        plan.name,
-        description: plan.description,
-        images: [],  // add a coach photo URL here if desired
-      },
-      unit_amount: plan.price,
-    },
-    quantity: 1,
-  };
-
-  // Subscriptions need recurring data on the price_data
-  if (plan.mode === 'subscription') {
-    lineItem.price_data.recurring = { interval: 'month' };
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required.' });
   }
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode:                  plan.mode,
-      line_items:           [lineItem],
-      success_url: `${req.headers.origin}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planId}`,
-      cancel_url:  `${req.headers.origin}/#pricing`,
-      metadata: {
-        planId,
-        planName: plan.name,
-      },
-      // Collect billing address for compliance
-      billing_address_collection: 'auto',
-      // Allow promo codes
-      allow_promotion_codes: true,
-    });
+    if (plan.mode === 'subscription') {
+      // 1. Create a Product & Price dynamically in Stripe
+      const product = await stripe.products.create({
+        name: plan.name,
+        description: plan.description,
+      });
 
-    res.json({ url: session.url, sessionId: session.id });
+      const price = await stripe.prices.create({
+        product: product.id,
+        unit_amount: plan.price,
+        currency: plan.currency,
+        recurring: { interval: 'month' },
+      });
+
+      // 2. Create the Customer
+      const customer = await stripe.customers.create({
+        email: email,
+      });
+
+      // 3. Create the Subscription
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{ price: price.id }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          planId,
+          planName: plan.name,
+        }
+      });
+
+      const paymentIntent = subscription.latest_invoice.payment_intent;
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        subscriptionId: subscription.id,
+        planId,
+        mode: 'subscription'
+      });
+
+    } else {
+      // One-time payment: Create a PaymentIntent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: plan.price,
+        currency: plan.currency,
+        automatic_payment_methods: { enabled: true },
+        receipt_email: email,
+        metadata: {
+          planId,
+          planName: plan.name,
+        },
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        planId,
+        mode: 'payment'
+      });
+    }
   } catch (err) {
     console.error('Stripe error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ─── Route: Stripe Webhook (receives payment confirmations from Stripe) ────────
 app.post('/webhook', (req, res) => {

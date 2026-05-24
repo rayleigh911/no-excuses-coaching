@@ -4,17 +4,36 @@
  * Plans are fetched from the backend /api/plans
  */
 
-const API_BASE = window.location.origin; // http://localhost:3000
+const API_BASE = window.location.origin;
+
+let stripeInstance = null;
+let stripeElements = null;
+let activePlanId = null;
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initSubscriptionState();
   initWorkoutGenerator();
   initMacroCalculator();
   initMachineGuide();
   loadAndRenderPlans();   // fetch real plans from server
   setupNavHighlight();
+  await initStripe();
+  setupCheckoutModal();
 });
+
+async function initStripe() {
+  try {
+    const res = await fetch(`${API_BASE}/api/config`);
+    const { publishableKey } = await res.json();
+    if (publishableKey) {
+      stripeInstance = Stripe(publishableKey);
+    }
+  } catch (err) {
+    console.error("Failed to initialize Stripe:", err);
+  }
+}
+
 
 // ─── State Management ────────────────────────────────────────────────────────
 const appState = {
@@ -151,42 +170,144 @@ function renderPricingCards(plans) {
 
   // Attach checkout handlers for non-owned plans
   document.querySelectorAll('.buy-plan-btn:not(:disabled)').forEach(btn => {
-    btn.addEventListener('click', () => handleCheckout(btn));
+    btn.addEventListener('click', () => {
+      const planId = btn.dataset.planId;
+      const planCard = btn.closest('.pricing-card');
+      const planName = planCard.querySelector('h3').textContent;
+      openCheckoutModal(planId, planName);
+    });
   });
 }
 
-async function handleCheckout(btn) {
-  const planId = btn.dataset.planId;
+function openCheckoutModal(planId, planName) {
+  const modal = document.getElementById('checkout-modal');
+  const modalPlanName = document.getElementById('modal-plan-name');
+  const emailInput = document.getElementById('checkout-email');
+  
+  activePlanId = planId;
+  modalPlanName.textContent = planName;
+  emailInput.value = '';
+  
+  modal.classList.add('show');
+}
 
-  // Loading state
-  const label = btn.querySelector('.btn-label');
-  const icon  = btn.querySelector('i');
-  const originalText = label.textContent;
-  btn.disabled = true;
-  icon.className = 'fas fa-circle-notch fa-spin';
-  label.textContent = 'Redirecting to Stripe…';
+function setupCheckoutModal() {
+  const modal = document.getElementById('checkout-modal');
+  const closeBtn = document.getElementById('close-modal-btn');
+  const emailInput = document.getElementById('checkout-email');
+  const payBtn = document.getElementById('pay-btn');
+  const payBtnText = document.getElementById('pay-btn-text');
+  const errorDiv = document.getElementById('payment-error');
+  const paymentElementContainer = document.getElementById('payment-element-container');
 
-  try {
-    const res  = await fetch(`${API_BASE}/api/create-checkout-session`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ planId }),
-    });
+  // Close modal logic
+  closeBtn.addEventListener('click', hideModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) hideModal();
+  });
 
-    const data = await res.json();
-
-    if (data.url) {
-      // Redirect to Stripe-hosted checkout page
-      window.location.href = data.url;
-    } else {
-      throw new Error(data.error || 'No checkout URL returned.');
-    }
-  } catch (err) {
-    showToast(`Payment error: ${err.message}`, 'error');
-    btn.disabled = false;
-    icon.className = 'fas fa-lock-open';
-    label.textContent = originalText;
+  function hideModal() {
+    modal.classList.remove('show');
+    stripeElements = null;
+    document.getElementById('payment-element').innerHTML = '';
+    paymentElementContainer.style.display = 'none';
+    emailInput.disabled = false;
+    payBtn.disabled = true;
+    payBtnText.textContent = 'Initialize Payment';
+    errorDiv.style.display = 'none';
   }
+
+  // Handle pay button click
+  payBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (!stripeInstance || !stripeElements) return;
+
+    payBtn.disabled = true;
+    payBtnText.textContent = 'Processing Payment...';
+    errorDiv.style.display = 'none';
+
+    try {
+      const { error } = await stripeInstance.confirmPayment({
+        elements: stripeElements,
+        confirmParams: {
+          return_url: `${window.location.origin}/success.html?plan=${activePlanId}`,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (err) {
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+      payBtn.disabled = false;
+      payBtnText.textContent = 'Pay Now';
+    }
+  });
+
+  // Handle email changes to dynamically create PaymentIntent and mount Elements
+  let debounceTimer;
+  emailInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const email = emailInput.value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      
+      if (!emailRegex.test(email)) {
+        payBtn.disabled = true;
+        payBtnText.textContent = 'Enter Valid Email';
+        return;
+      }
+
+      payBtnText.textContent = 'Initializing Secure Checkout...';
+      emailInput.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/create-payment-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId: activePlanId, email }),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const { clientSecret } = data;
+
+        const appearance = {
+          theme: 'night',
+          variables: {
+            colorPrimary: '#ff5722',
+            colorBackground: '#13151b',
+            colorText: '#ffffff',
+            colorDanger: '#ff5722',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            spacingUnit: '4px',
+            borderRadius: '4px',
+          },
+        };
+
+        stripeElements = stripeInstance.elements({ clientSecret, appearance });
+        const paymentElement = stripeElements.create('payment');
+        
+        paymentElementContainer.style.display = 'block';
+        paymentElement.mount('#payment-element');
+
+        paymentElement.on('ready', () => {
+          payBtn.disabled = false;
+          payBtnText.textContent = 'Pay Now';
+        });
+
+      } catch (err) {
+        errorDiv.textContent = `Initialization failed: ${err.message}`;
+        errorDiv.style.display = 'block';
+        emailInput.disabled = false;
+        payBtnText.textContent = 'Initialize Payment';
+      }
+    }, 600);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
