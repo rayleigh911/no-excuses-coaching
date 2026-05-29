@@ -11,6 +11,9 @@
 
   <!-- Real Stripe.js — loaded from Stripe's CDN for PCI compliance -->
   <script src="https://js.stripe.com/v3/"></script>
+
+  <!-- Cloudflare Turnstile — bot protection -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 
@@ -287,6 +290,19 @@
       <!-- Error Message -->
       <div id="payment-error" style="color: var(--accent-orange); font-size: 0.85rem; margin-top: 15px; display: none;"></div>
 
+      <!-- Cloudflare Turnstile Widget -->
+      <div id="turnstile-container" style="margin-top: 20px; display: none;">
+        <div
+          class="cf-turnstile"
+          id="cf-turnstile-widget"
+          data-sitekey="0x4AAAAAADYzHabEb7BToMpO"
+          data-theme="dark"
+          data-callback="onTurnstileSuccess"
+          data-expired-callback="onTurnstileExpired"
+          data-error-callback="onTurnstileError"
+        ></div>
+      </div>
+
       <!-- Pay Button -->
       <button id="pay-btn" class="btn-primary" style="margin-top: 25px; width: 100%; justify-content: center;" disabled>
         <i class="fas fa-lock"></i> <span id="pay-btn-text">Initialize Payment</span>
@@ -294,7 +310,7 @@
 
       <div class="stripe-secure-note" style="margin-top: 20px; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
         <i class="fab fa-stripe" style="color:#635bff; font-size:1.2rem; vertical-align: middle; margin-right: 5px;"></i>
-        Secure 256-bit SSL encrypted checkout
+        Protected by Cloudflare Turnstile &amp; Stripe SSL
       </div>
     </div>
   </div>

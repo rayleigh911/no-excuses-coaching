@@ -89,6 +89,27 @@ app.get('/api/config', (req, res) => {
   res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
 });
 
+// ─── Cloudflare Turnstile Verification Helper ──────────────────────────────────
+async function verifyTurnstile(token, ip) {
+  if (!token) return false;
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    console.warn('⚠️  TURNSTILE_SECRET_KEY not set — skipping verification in dev mode');
+    return true; // skip verification if key not configured (dev only)
+  }
+  const body = new URLSearchParams({
+    secret,
+    response: token,
+    remoteip: ip || '',
+  });
+  const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    body,
+  });
+  const outcome = await verifyRes.json();
+  return outcome.success === true;
+}
+
 // ─── Route: Get All Plans (for the frontend to render dynamically) ────────────
 app.get('/api/plans', (req, res) => {
   const plansForClient = Object.entries(PLANS).map(([id, plan]) => ({
@@ -105,7 +126,7 @@ app.get('/api/plans', (req, res) => {
 
 // ─── Route: Create Stripe Payment Intent or Subscription ──────────────────────
 app.post('/api/create-payment-intent', async (req, res) => {
-  const { planId, email } = req.body;
+  const { planId, email, turnstileToken } = req.body;
   const plan = PLANS[planId];
 
   // Safety check: ensure keys are configured
@@ -113,6 +134,13 @@ app.post('/api/create-payment-intent', async (req, res) => {
     return res.status(400).json({
       error: 'Stripe keys are not configured. Please open the `.env` file in the project folder and paste your actual Stripe API keys.'
     });
+  }
+
+  // ── Cloudflare Turnstile verification ────────────────────────────────────────
+  const clientIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const turnstileOk = await verifyTurnstile(turnstileToken, clientIp);
+  if (!turnstileOk) {
+    return res.status(403).json({ error: 'Bot verification failed. Please refresh and try again.' });
   }
 
   if (!plan) {

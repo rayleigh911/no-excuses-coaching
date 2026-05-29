@@ -9,6 +9,35 @@ const API_BASE = window.location.origin;
 let stripeInstance = null;
 let stripeElements = null;
 let activePlanId = null;
+let turnstileToken = null;
+let stripeElementsReady = false;
+
+// ─── Cloudflare Turnstile Callbacks (called globally by Turnstile script) ─────
+window.onTurnstileSuccess = function(token) {
+  turnstileToken = token;
+  // Enable pay button if Stripe elements are also ready
+  if (stripeElementsReady) {
+    const payBtn = document.getElementById('pay-btn');
+    const payBtnText = document.getElementById('pay-btn-text');
+    payBtn.disabled = false;
+    payBtnText.textContent = 'Pay Now — Verified ✓';
+  }
+};
+
+window.onTurnstileExpired = function() {
+  turnstileToken = null;
+  const payBtn = document.getElementById('pay-btn');
+  const payBtnText = document.getElementById('pay-btn-text');
+  payBtn.disabled = true;
+  payBtnText.textContent = 'Verification Expired — Retry';
+};
+
+window.onTurnstileError = function() {
+  turnstileToken = null;
+  const errorDiv = document.getElementById('payment-error');
+  errorDiv.textContent = 'Bot verification failed. Please refresh and try again.';
+  errorDiv.style.display = 'block';
+};
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -209,8 +238,16 @@ function setupCheckoutModal() {
   function hideModal() {
     modal.classList.remove('show');
     stripeElements = null;
+    stripeElementsReady = false;
+    turnstileToken = null;
     document.getElementById('payment-element').innerHTML = '';
     paymentElementContainer.style.display = 'none';
+    // Reset Turnstile widget
+    const turnstileContainer = document.getElementById('turnstile-container');
+    turnstileContainer.style.display = 'none';
+    if (window.turnstile) {
+      window.turnstile.reset('#cf-turnstile-widget');
+    }
     emailInput.disabled = false;
     payBtn.disabled = true;
     payBtnText.textContent = 'Initialize Payment';
@@ -221,6 +258,14 @@ function setupCheckoutModal() {
   payBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     if (!stripeInstance || !stripeElements) return;
+
+    // Double-check Turnstile token
+    if (!turnstileToken) {
+      const errorDiv = document.getElementById('payment-error');
+      errorDiv.textContent = 'Please complete the bot verification check above.';
+      errorDiv.style.display = 'block';
+      return;
+    }
 
     payBtn.disabled = true;
     payBtnText.textContent = 'Processing Payment...';
@@ -242,6 +287,10 @@ function setupCheckoutModal() {
       errorDiv.style.display = 'block';
       payBtn.disabled = false;
       payBtnText.textContent = 'Pay Now';
+      // Reset Turnstile on error so user can re-verify
+      turnstileToken = null;
+      stripeElementsReady = false;
+      if (window.turnstile) window.turnstile.reset('#cf-turnstile-widget');
     }
   });
 
@@ -266,7 +315,7 @@ function setupCheckoutModal() {
         const res = await fetch(`${API_BASE}/api/create-payment-intent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ planId: activePlanId, email }),
+          body: JSON.stringify({ planId: activePlanId, email, turnstileToken }),
         });
         const data = await res.json();
 
@@ -296,8 +345,16 @@ function setupCheckoutModal() {
         paymentElement.mount('#payment-element');
 
         paymentElement.on('ready', () => {
-          payBtn.disabled = false;
-          payBtnText.textContent = 'Pay Now';
+          stripeElementsReady = true;
+          // Show Turnstile widget — Pay button activates only after both are done
+          const turnstileContainer = document.getElementById('turnstile-container');
+          turnstileContainer.style.display = 'block';
+          payBtnText.textContent = 'Complete Verification Below';
+          // If Turnstile already passed (fast machines), enable pay button
+          if (turnstileToken) {
+            payBtn.disabled = false;
+            payBtnText.textContent = 'Pay Now — Verified ✓';
+          }
         });
 
       } catch (err) {
