@@ -9,38 +9,44 @@ const API_BASE = window.location.origin;
 let stripeInstance = null;
 let stripeElements = null;
 let activePlanId = null;
-let turnstileToken = null;
 let stripeElementsReady = false;
 
-// ─── Cloudflare Turnstile Callbacks (called globally by Turnstile script) ─────
-window.onTurnstileSuccess = function(token) {
-  turnstileToken = token;
-  // Enable pay button if Stripe elements are also ready
-  if (stripeElementsReady) {
-    const payBtn = document.getElementById('pay-btn');
-    const payBtnText = document.getElementById('pay-btn-text');
-    payBtn.disabled = false;
-    payBtnText.textContent = 'Pay Now — Verified ✓';
+// ─── Cloudflare Turnstile Entry Gate Callbacks (called globally by Turnstile script) ───
+window.onGateTurnstileSuccess = function(token) {
+  sessionStorage.setItem('turnstile_verified', 'true');
+  const gateEl = document.getElementById('turnstile-gate');
+  const body = document.body;
+  if (gateEl) {
+    gateEl.classList.add('fade-out');
+    setTimeout(() => {
+      gateEl.style.display = 'none';
+    }, 500);
+  }
+  body.classList.remove('gate-active');
+};
+
+window.onGateTurnstileExpired = function() {
+  sessionStorage.removeItem('turnstile_verified');
+  if (window.turnstile) {
+    window.turnstile.reset('#cf-turnstile-gate-widget');
   }
 };
 
-window.onTurnstileExpired = function() {
-  turnstileToken = null;
-  const payBtn = document.getElementById('pay-btn');
-  const payBtnText = document.getElementById('pay-btn-text');
-  payBtn.disabled = true;
-  payBtnText.textContent = 'Verification Expired — Retry';
-};
-
-window.onTurnstileError = function() {
-  turnstileToken = null;
-  const errorDiv = document.getElementById('payment-error');
-  errorDiv.textContent = 'Bot verification failed. Please refresh and try again.';
-  errorDiv.style.display = 'block';
+window.onGateTurnstileError = function() {
+  sessionStorage.removeItem('turnstile_verified');
+  alert('Bot verification failed. Please reload the page to try again.');
 };
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  // Preemptively check if already verified in this session to bypass gate immediately
+  const gateVerified = sessionStorage.getItem('turnstile_verified') === 'true';
+  const gateEl = document.getElementById('turnstile-gate');
+  if (gateVerified) {
+    if (gateEl) gateEl.style.display = 'none';
+    document.body.classList.remove('gate-active');
+  }
+
   initSubscriptionState();
   initWorkoutGenerator();
   initMacroCalculator();
@@ -239,15 +245,8 @@ function setupCheckoutModal() {
     modal.classList.remove('show');
     stripeElements = null;
     stripeElementsReady = false;
-    turnstileToken = null;
     document.getElementById('payment-element').innerHTML = '';
     paymentElementContainer.style.display = 'none';
-    // Reset Turnstile widget
-    const turnstileContainer = document.getElementById('turnstile-container');
-    turnstileContainer.style.display = 'none';
-    if (window.turnstile) {
-      window.turnstile.reset('#cf-turnstile-widget');
-    }
     emailInput.disabled = false;
     payBtn.disabled = true;
     payBtnText.textContent = 'Initialize Payment';
@@ -258,14 +257,6 @@ function setupCheckoutModal() {
   payBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     if (!stripeInstance || !stripeElements) return;
-
-    // Double-check Turnstile token
-    if (!turnstileToken) {
-      const errorDiv = document.getElementById('payment-error');
-      errorDiv.textContent = 'Please complete the bot verification check above.';
-      errorDiv.style.display = 'block';
-      return;
-    }
 
     payBtn.disabled = true;
     payBtnText.textContent = 'Processing Payment...';
@@ -287,10 +278,7 @@ function setupCheckoutModal() {
       errorDiv.style.display = 'block';
       payBtn.disabled = false;
       payBtnText.textContent = 'Pay Now';
-      // Reset Turnstile on error so user can re-verify
-      turnstileToken = null;
       stripeElementsReady = false;
-      if (window.turnstile) window.turnstile.reset('#cf-turnstile-widget');
     }
   });
 
@@ -315,7 +303,7 @@ function setupCheckoutModal() {
         const res = await fetch(`${API_BASE}/api/create-payment-intent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ planId: activePlanId, email, turnstileToken }),
+          body: JSON.stringify({ planId: activePlanId, email }),
         });
         const data = await res.json();
 
@@ -346,15 +334,8 @@ function setupCheckoutModal() {
 
         paymentElement.on('ready', () => {
           stripeElementsReady = true;
-          // Show Turnstile widget — Pay button activates only after both are done
-          const turnstileContainer = document.getElementById('turnstile-container');
-          turnstileContainer.style.display = 'block';
-          payBtnText.textContent = 'Complete Verification Below';
-          // If Turnstile already passed (fast machines), enable pay button
-          if (turnstileToken) {
-            payBtn.disabled = false;
-            payBtnText.textContent = 'Pay Now — Verified ✓';
-          }
+          payBtn.disabled = false;
+          payBtnText.textContent = 'Pay Now';
         });
 
       } catch (err) {

@@ -126,7 +126,7 @@ app.get('/api/plans', (req, res) => {
 
 // ─── Route: Create Stripe Payment Intent or Subscription ──────────────────────
 app.post('/api/create-payment-intent', async (req, res) => {
-  const { planId, email, turnstileToken } = req.body;
+  const { planId, email } = req.body;
   const plan = PLANS[planId];
 
   // Safety check: ensure keys are configured
@@ -134,13 +134,6 @@ app.post('/api/create-payment-intent', async (req, res) => {
     return res.status(400).json({
       error: 'Stripe keys are not configured. Please open the `.env` file in the project folder and paste your actual Stripe API keys.'
     });
-  }
-
-  // ── Cloudflare Turnstile verification ────────────────────────────────────────
-  const clientIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const turnstileOk = await verifyTurnstile(turnstileToken, clientIp);
-  if (!turnstileOk) {
-    return res.status(403).json({ error: 'Bot verification failed. Please refresh and try again.' });
   }
 
   if (!plan) {
