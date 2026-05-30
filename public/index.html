@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    if (sessionStorage.getItem('turnstile_verified') !== 'true') {
+      window.location.replace('/verify.html');
+    }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Apex Elite - No-Excuses Physique & Lifestyle Coaching</title>
@@ -11,39 +16,8 @@
 
   <!-- Real Stripe.js — loaded from Stripe's CDN for PCI compliance -->
   <script src="https://js.stripe.com/v3/"></script>
-
-  <!-- Cloudflare Turnstile — bot protection -->
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
-<body class="gate-active">
-
-  <!-- ═══════════════════════════════════════════════════════ SECURITY GATE ══ -->
-  <div id="turnstile-gate" class="turnstile-gate">
-    <div class="gate-content">
-      <div class="gate-logo">
-        <i class="fas fa-dumbbell"></i>
-        <span>APEX ELITE</span>
-      </div>
-      <h2 class="gate-title">Security Verification</h2>
-      <p class="gate-desc">To access our elite coaching platform, please complete the quick human verification below.</p>
-      
-      <div class="gate-widget-wrapper">
-        <div
-          class="cf-turnstile"
-          id="cf-turnstile-gate-widget"
-          data-sitekey="0x4AAAAAADYzHabEb7BToMpO"
-          data-theme="dark"
-          data-callback="onGateTurnstileSuccess"
-          data-expired-callback="onGateTurnstileExpired"
-          data-error-callback="onGateTurnstileError"
-        ></div>
-      </div>
-      
-      <div class="gate-footer">
-        <i class="fas fa-shield-halved"></i> Secured by Cloudflare Turnstile
-      </div>
-    </div>
-  </div>
+<body>
 
   <!-- ═══════════════════════════════════════════════════════ NAVBAR ══ -->
   <nav class="navbar" id="home">

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Elite - Verification Required</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Cloudflare Turnstile script -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+<body style="margin: 0; padding: 0; height: 100vh; overflow: hidden; background: #0a0b0d;">
+
+  <!-- ═══════════════════════════════════════════════════════ SECURITY GATE ══ -->
+  <div class="turnstile-gate">
+    <div class="gate-content">
+      <div class="gate-logo">
+        <i class="fas fa-dumbbell"></i>
+        <span>APEX ELITE</span>
+      </div>
+      <h2 class="gate-title">Security Verification</h2>
+      <p class="gate-desc">To access our elite coaching platform, please complete the quick human verification below.</p>
+      
+      <div class="gate-widget-wrapper">
+        <div
+          class="cf-turnstile"
+          id="cf-turnstile-gate-widget"
+          data-sitekey="0x4AAAAAADYzHabEb7BToMpO"
+          data-theme="dark"
+          data-callback="onGateSuccess"
+          data-expired-callback="onGateExpired"
+          data-error-callback="onGateError"
+        ></div>
+      </div>
+      
+      <div class="gate-footer">
+        <i class="fas fa-shield-halved"></i> Secured by Cloudflare Turnstile
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Security redirect callbacks
+    function onGateSuccess(token) {
+      sessionStorage.setItem('turnstile_verified', 'true');
+      window.location.replace('/');
+    }
+
+    function onGateExpired() {
+      sessionStorage.removeItem('turnstile_verified');
+      if (window.turnstile) {
+        window.turnstile.reset('#cf-turnstile-gate-widget');
+      }
+    }
+
+    function onGateError() {
+      sessionStorage.removeItem('turnstile_verified');
+      alert('Verification failed. Please refresh the page to try again.');
+    }
+  </script>
+</body>
+</html>

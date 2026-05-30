@@ -11,42 +11,8 @@ let stripeElements = null;
 let activePlanId = null;
 let stripeElementsReady = false;
 
-// ─── Cloudflare Turnstile Entry Gate Callbacks (called globally by Turnstile script) ───
-window.onGateTurnstileSuccess = function(token) {
-  sessionStorage.setItem('turnstile_verified', 'true');
-  const gateEl = document.getElementById('turnstile-gate');
-  const body = document.body;
-  if (gateEl) {
-    gateEl.classList.add('fade-out');
-    setTimeout(() => {
-      gateEl.style.display = 'none';
-    }, 500);
-  }
-  body.classList.remove('gate-active');
-};
-
-window.onGateTurnstileExpired = function() {
-  sessionStorage.removeItem('turnstile_verified');
-  if (window.turnstile) {
-    window.turnstile.reset('#cf-turnstile-gate-widget');
-  }
-};
-
-window.onGateTurnstileError = function() {
-  sessionStorage.removeItem('turnstile_verified');
-  alert('Bot verification failed. Please reload the page to try again.');
-};
-
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  // Preemptively check if already verified in this session to bypass gate immediately
-  const gateVerified = sessionStorage.getItem('turnstile_verified') === 'true';
-  const gateEl = document.getElementById('turnstile-gate');
-  if (gateVerified) {
-    if (gateEl) gateEl.style.display = 'none';
-    document.body.classList.remove('gate-active');
-  }
-
   initSubscriptionState();
   initWorkoutGenerator();
   initMacroCalculator();
