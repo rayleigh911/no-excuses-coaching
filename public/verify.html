@@ -3,44 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Apex Elite - Verification Required</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Apex Elite - Security Check</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Cloudflare Turnstile script -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-</head>
-<body style="margin: 0; padding: 0; height: 100vh; overflow: hidden; background: #0a0b0d;">
+  <style>
+    :root {
+      --bg-color: #f3f4f6;
+      --card-bg: #ffffff;
+      --text-main: #111827;
+      --text-muted: #4b5563;
+      --accent-orange: #ff5722;
+      --accent-green: #10b981;
+      --border-color: #e5e7eb;
+    }
 
-  <!-- ═══════════════════════════════════════════════════════ SECURITY GATE ══ -->
-  <div class="turnstile-gate">
-    <div class="gate-content">
-      <div class="gate-logo">
-        <i class="fas fa-dumbbell"></i>
-        <span>APEX ELITE</span>
-      </div>
-      <h2 class="gate-title">Security Verification</h2>
-      <p class="gate-desc">To access our elite coaching platform, please complete the quick human verification below.</p>
-      
-      <div class="gate-widget-wrapper">
-        <div
-          class="cf-turnstile"
-          id="cf-turnstile-gate-widget"
-          data-sitekey="0x4AAAAAADYzHabEb7BToMpO"
-          data-theme="dark"
-          data-callback="onGateSuccess"
-          data-expired-callback="onGateExpired"
-          data-error-callback="onGateError"
-        ></div>
-      </div>
-      
-      <div class="gate-footer">
-        <i class="fas fa-shield-halved"></i> Secured by Cloudflare Turnstile
-      </div>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .gateway-container {
+      width: 90%;
+      max-width: 450px;
+      padding: 40px 30px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-color);
+      text-align: center;
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .logo-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 24px;
+      color: var(--text-main);
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-wrapper i {
+      color: var(--accent-orange);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(255,87,34,0)); }
+      50% { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(255,87,34,0.4)); }
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 30px;
+    }
+
+    .widget-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 65px;
+      margin-bottom: 24px;
+    }
+
+    .info-footer {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding-top: 18px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .info-footer i {
+      color: var(--accent-green);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="gateway-container">
+    <div class="logo-wrapper">
+      <i class="fas fa-dumbbell"></i>
+      <span>Apex Elite</span>
+    </div>
+    
+    <h1 class="title">Security Verification</h1>
+    <p class="desc">Please solve the quick human challenge to securely access <strong>apexelite.org</strong>.</p>
+    
+    <div class="widget-container">
+      <div
+        class="cf-turnstile"
+        id="cf-turnstile-gate-widget"
+        data-sitekey="0x4AAAAAADYzHabEb7BToMpO"
+        data-theme="light"
+        data-callback="onGateSuccess"
+        data-expired-callback="onGateExpired"
+        data-error-callback="onGateError"
+      ></div>
+    </div>
+    
+    <div class="info-footer">
+      <i class="fas fa-shield-halved"></i> Secured by Cloudflare Turnstile • Connection is secure
     </div>
   </div>
 
   <script>
-    // Security redirect callbacks
     function onGateSuccess(token) {
       sessionStorage.setItem('turnstile_verified', 'true');
       window.location.replace('/');
@@ -58,5 +157,6 @@
       alert('Verification failed. Please refresh the page to try again.');
     }
   </script>
+
 </body>
 </html>
